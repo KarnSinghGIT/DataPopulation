@@ -1,0 +1,62 @@
+import http.client
+import os
+import json
+from bs4 import BeautifulSoup
+import requests
+
+# Create the "articles" folder if it doesn't exist
+if not os.path.exists("articles_category"):
+    os.makedirs("articles_category")
+
+conn = http.client.HTTPSConnection("seo-api.p.rapidapi.com")
+
+headers = {
+    'X-User-Agent': "desktop",
+    'X-Proxy-Location': "EU",
+    'X-RapidAPI-Key': "xxxx",
+    'X-RapidAPI-Host': "seo-api.p.rapidapi.com"
+}
+
+conn.request("GET", "/v1/news/q=Sugar%20prices%20news%20in%20India", headers=headers)
+
+res = conn.getresponse()
+data = res.read()
+
+response = data.decode("utf-8")
+
+
+# Parse the JSON response
+response_json = json.loads(response)
+
+# Extract the articles from the response
+articles = response_json.get("entries", [])
+
+# Desktop user-agent
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
+# Mobile user-agent
+MOBILE_USER_AGENT = "Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 Mobile Safari/537.36"
+HEADERS = {"user-agent": USER_AGENT}
+
+index=0
+# Save each article as an HTML file
+for article in articles:
+    title = article["title"]
+    html_content = article["summary"]
+    link = article["links"][0]["href"]
+    print(f"Article saved: {link}")
+     # Make a GET request to the link URL
+    response = requests.get(link, headers=HEADERS)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Create the filename by removing invalid characters from the title
+        #filename = f"articles_category/{title.replace('/', '_').replace(' ', '_')}.html"
+        filename = f"articles_category/{index}.html"
+        index=index+1
+        print(f"data: {str(soup)}")
+        # Save the formatted HTML content to a file
+        with open(filename, 'w') as file:
+            file.write(str(soup))
+
+        print(f"Article saved: {filename}")
+
